@@ -1,7 +1,6 @@
 ﻿import express from 'express';
 import cors from 'cors';
 import { Innertube, UniversalCache } from 'youtubei.js';
-import { fileURLToPath } from 'url';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,10 +31,11 @@ async function getYT() {
     }
 }
 
-// Check if running directly (for local development)
-const isMain = process.argv[1] && (process.argv[1] === fileURLToPath(import.meta.url) || process.argv[1].endsWith('index.js'));
-if (isMain) {
-    getYT();
+// Node server listener (local development)
+if (!process.env.NETLIFY && !process.env.LAMBDA_TASK_ROOT) {
+    app.listen(PORT, () => {
+        console.log(`Server is running on http://localhost:${PORT}`);
+    });
 }
 
 // --- YouTube Music API Logic ---
@@ -280,11 +280,7 @@ app.get('/', (req, res) => {
     });
 });
 
-if (isMain) {
-    app.listen(PORT, () => {
-        console.log(`Server is running on http://localhost:${PORT}`);
-    });
-}
+// Port occupied by Netlify logic, moved above
 
 // Export for serverless (Netlify)
 export default app;

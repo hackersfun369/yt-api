@@ -63,20 +63,42 @@ app.get('/youtube/suggestions', async (req, res) => {
 // YouTube Music Search
 app.get('/youtube/search', async (req, res) => {
     const query = req.query.query;
-    if (!query) return res.status(400).send({ error: 'Query parameter is required' });
+    if (!query) return res.status(400).send({ error: 'Query parameter required' });
     const ytClient = await getYT();
     if (!ytClient) return res.status(503).send({
-        error: 'YouTube client not ready',
-        details: lastInitError,
-        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
+        error: 'YouTube client not ready', details: lastInitError
+    });
+    try {
+        const results = await ytClient.music.search(query, { type: 'song' });
+        res.send({ items: results.songs?.contents || [] });
+    } catch (e) { res.status(500).send({ error: e.message }); }
+});
+
+// Simplified Song Search (Requested)
+app.get('/youtube/songs', async (req, res) => {
+    const query = req.query.query;
+    if (!query) return res.status(400).send({ error: 'Query parameter required' });
+    const ytClient = await getYT();
+    if (!ytClient) return res.status(503).send({
+        error: 'YouTube client not ready', details: lastInitError
     });
     try {
         const results = await ytClient.music.search(query, { type: 'song' });
         const songs = results.songs?.contents || [];
-        res.send({ items: songs });
-    } catch (error) {
-        res.status(500).send({ error: 'Failed to fetch search results', message: error.message });
-    }
+
+        const simplifiedSongs = songs.map(song => ({
+            id: song.id,
+            name: song.title,
+            singers: song.artists?.map(a => a.name).join(', ') || 'Unknown Artist',
+            album: song.album?.name || 'Single',
+            duration: song.duration?.text || 'Unknown',
+            image: song.thumbnail?.contents?.[0]?.url || song.thumbnails?.[0]?.url,
+            // Extra metadata helpful for clients
+            isExplicit: song.is_explicit || false
+        }));
+
+        res.send({ items: simplifiedSongs });
+    } catch (e) { res.status(500).send({ error: e.message }); }
 });
 
 // Legacy search endpoint (now YouTube only)
@@ -298,10 +320,11 @@ app.get('/', (req, res) => {
     res.send({
         message: 'Nirvay YouTube Music API (Netlify Serverless Exclusive)',
         endpoints: [
-            '/youtube/home', '/youtube/search?query=...', '/youtube/suggestions?query=...',
-            '/youtube/explore', '/youtube/moods', '/stream/youtube/:videoId',
-            '/youtube/album/:id', '/youtube/playlist/:id', '/youtube/artist/:id',
-            '/youtube/lyrics/:videoId', '/youtube/related/:videoId', '/youtube/upnext/:videoId'
+            '/youtube/home', '/youtube/songs?query=...', '/youtube/search?query=...',
+            '/youtube/suggestions?query=...', '/youtube/explore', '/youtube/moods',
+            '/stream/youtube/:videoId', '/youtube/album/:id', '/youtube/playlist/:id',
+            '/youtube/artist/:id', '/youtube/lyrics/:videoId', '/youtube/related/:videoId',
+            '/youtube/upnext/:videoId'
         ]
     });
 });

@@ -33,7 +33,8 @@ This project is pre-configured for instant deployment on Netlify.
 ### 2. Search & Streaming
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
-| `/youtube/search?query=...` | `GET` | Official song search results |
+| `/youtube/songs?query=...` | `GET` | **Simplified** song metadata (ID, Name, Singers, etc.) |
+| `/youtube/search?query=...` | `GET` | Official song search results (Raw data) |
 | `/youtube/suggestions?query=...`| `GET` | Real-time search query auto-completion |
 | `/stream/youtube/:videoId` | `GET` | Returns Metadata + Playable Audio URL |
 

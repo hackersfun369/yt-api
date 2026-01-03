@@ -15,13 +15,15 @@ let lastInitError = null;
 async function getYT() {
     if (yt) return yt;
     try {
+        const { Innertube, UniversalCache } = await import('youtubei.js');
         yt = await Innertube.create({
             cache: new UniversalCache(false),
             generate_session_locally: true,
             device_category: 'mobile',
-            client_type: 'ANDROID'
+            // ANDROID_MUSIC client is more resilient for music tracks
+            client_type: 'ANDROID_MUSIC'
         });
-        console.log('✅ YouTube InnerTube Client Initialized (Android Mode)');
+        console.log('✅ YouTube InnerTube Client Initialized (Android Music Mode)');
         lastInitError = null;
         return yt;
     } catch (e) {
@@ -110,28 +112,52 @@ app.get('/stream/youtube/:videoId', async (req, res) => {
     try {
         const info = await ytClient.getBasicInfo(videoId);
         let bestFormat = null;
+
+        // Try to choose the best audio format
         try {
             bestFormat = info.chooseFormat({ type: 'audio', quality: 'best' });
-        } catch (e) { }
+        } catch (e) {
+            console.log('chooseFormat failed, falling back to manual search');
+        }
 
         if (!bestFormat) {
-            const formats = info.streaming_data?.formats.concat(info.streaming_data.adaptive_formats) || [];
-            const audioFormats = formats.filter(f => f.mime_type.includes('audio'));
+            const formats = [
+                ...(info.streaming_data?.formats || []),
+                ...(info.streaming_data?.adaptive_formats || [])
+            ];
+            const audioFormats = formats.filter(f => f.mime_type && f.mime_type.includes('audio'));
             if (audioFormats.length > 0) {
-                audioFormats.sort((a, b) => b.bitrate - a.bitrate);
+                audioFormats.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
                 bestFormat = audioFormats[0];
             }
         }
 
-        if (!bestFormat) return res.status(404).send({ error: 'No audio streams found' });
+        if (!bestFormat) {
+            console.error('No audio formats found in streaming_data:', JSON.stringify(info.streaming_data));
+            return res.status(404).send({
+                error: 'No audio streams found',
+                videoId: videoId,
+                title: info.basic_info.title,
+                message: 'This often happens with restricted or official music videos. Try another track.'
+            });
+        }
 
         let url = null;
         try {
             url = bestFormat.decipher(ytClient.session.player);
-        } catch (e) { }
+        } catch (e) {
+            console.log('decipher failed, using raw url');
+        }
 
         if (!url || typeof url !== 'string') url = bestFormat.url;
-        if (!url) return res.status(404).send({ error: 'Failed to extract audio URL' });
+
+        if (!url) {
+            return res.status(404).send({
+                error: 'Failed to extract audio URL',
+                videoId: videoId,
+                details: 'Deciphering failed and no raw URL was present.'
+            });
+        }
 
         res.send({
             videoId: videoId,

@@ -58,6 +58,8 @@ For professional mobile apps, use `/youtube/player/:videoId` to get raw metadata
 - `playerUrl`: Current `base.js` link for deciphering logic.
 - `signatureTimestamp`: Required for signature verification.
 
+👉 **[View Full Client Implementation Guide](file:///c:/Users/sathy/Downloads/bloomee_tunes_windows_x64_v2.13.3+188/bloomee_node_api/CLIENT_IMPLEMENTATION.md)**
+
 ### 4. Metadata
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |

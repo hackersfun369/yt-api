@@ -1,4 +1,4 @@
-# Bloomee YouTube Music API (Pro) 🚀
+# Nirvay YouTube Music API (Pro) 🚀
 
 A high-performance, serverless-ready REST API for YouTube Music data. This API provides official data access including high-quality audio streaming, lyrics, personalized feeds, and more. Optimized for **Netlify Functions** and **Native ES Modules**.
 

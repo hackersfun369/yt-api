@@ -1,142 +1,72 @@
-# Bloomee Tunes Node.js API
+# Bloomee YouTube Music API (Pro) 🚀
 
-A Node.js REST API that replicates the data fetching capabilities of Bloomee Tunes, providing access to music search from JioSaavn and YouTube (via Piped).
+A high-performance, serverless-ready REST API for YouTube Music data. This API provides official data access including high-quality audio streaming, lyrics, personalized feeds, and more. Optimized for **Netlify Functions** and **Native ES Modules**.
 
-## Features
+## 🌟 Key Features
 
-- 🎵 **JioSaavn Integration**: Search for songs, albums, and artists
-- 🎬 **YouTube Music Integration**: Search via Piped API (privacy-focused, no API key required)
-- 🔄 **Unified Search**: Query multiple sources simultaneously
-- 🚀 **Fast & Lightweight**: Built with Express.js
-- 🌐 **CORS Enabled**: Ready for frontend integration
+- 🎹 **Pro YouTube Music Data**: Official search results, home feeds, charts, and exploration.
+- 🎧 **High-Quality Streaming**: Reliable direct audio URL extraction via Android InnerTube protocol.
+- 📜 **Official Lyrics**: Fetch song lyrics directly from YouTube Music.
+- 🔄 **Continuous Playback**: Up-Next/Queue suggestions to build a seamless player experience.
+- ☁️ **Serverless First**: Fully compatible with Netlify Functions using `esbuild` and `serverless-http`.
+- ⚡ **Native ESM**: Built with modern JavaScript (ES Modules) for speed and compatibility.
 
-## Installation
+## 📦 Deployment on Netlify
+
+This project is pre-configured for instant deployment on Netlify.
+
+1.  **Push to GitHub**: Push your local repository to a new GitHub repo.
+2.  **Import to Netlify**: Select the repository in your Netlify dashboard.
+3.  **Environment Settings**: 
+    - Set `NODE_VERSION` to `18`.
+    - (The `netlify.toml` file will handle the rest automatically).
+
+## 🛠️ API Reference
+
+### 1. Music Discovery
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/youtube/home` | `GET` | Curated home feed (trending, new releases) |
+| `/youtube/explore` | `GET` | Global charts and new music |
+| `/youtube/moods` | `GET` | Interest-based categories (Chill, Focus, etc.) |
+
+### 2. Search & Streaming
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/youtube/search?query=...` | `GET` | Official song search results |
+| `/youtube/suggestions?query=...`| `GET` | Real-time search query auto-completion |
+| `/stream/youtube/:videoId` | `GET` | Returns Metadata + Playable Audio URL |
+
+### 3. Song Details & Playback
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/youtube/lyrics/:videoId` | `GET` | Official song lyrics (if available) |
+| `/youtube/upnext/:videoId` | `GET` | Continuous queue suggestions (Autoplay) |
+| `/youtube/related/:videoId` | `GET` | Related tracks and videos |
+
+### 4. Metadata
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/youtube/artist/:id` | `GET` | Full artist profile, albums, and top songs |
+| `/youtube/album/:id` | `GET` | Full tracklist for any album/EP |
+| `/youtube/playlist/:id` | `GET` | Content of any public playlist |
+
+## 🚀 Local Development
 
 ```bash
+# Install dependencies
 npm install
-```
 
-## Usage
-
-### Start the Server
-
-```bash
+# Start local server
 npm start
 ```
+The server will run on `http://localhost:3000`.
 
-Or for development with auto-reload:
+## 📂 Project Structure
+- `index.js`: Main API logic (Native ESM).
+- `functions/api.js`: Netlify serverless entry point.
+- `netlify.toml`: Deployment and bundling configuration.
+- `package.json`: Dependency management and Node version settings.
 
-```bash
-npm run dev
-```
-
-The server will start on `http://localhost:3000`
-
-## API Endpoints
-
-### 1. Unified Search (Recommended)
-Search across both JioSaavn and YouTube simultaneously.
-
-```
-GET /search?query=YOUR_QUERY
-```
-
-**Example:**
-```bash
-curl "http://localhost:3000/search?query=believer"
-```
-
-**Response:**
-```json
-{
-  "saavn": {
-    "songs": { "data": [...] },
-    "albums": { "data": [...] },
-    "artists": { "data": [...] }
-  },
-  "youtube": {
-    "items": [...]
-  }
-}
-```
-
-### 2. JioSaavn Only
-
-```
-GET /saavn/search?query=YOUR_QUERY
-```
-
-**Example:**
-```bash
-curl "http://localhost:3000/saavn/search?query=arijit singh"
-```
-
-### 3. YouTube Only
-
-```
-GET /youtube/search?query=YOUR_QUERY
-```
-
-**Example:**
-```bash
-curl "http://localhost:3000/youtube/search?query=imagine dragons"
-```
-
-## Technical Details
-
-### Data Sources
-
-1. **JioSaavn**: Uses the official JioSaavn web API endpoint
-   - Base URL: `https://www.jiosaavn.com/api.php`
-   - Returns: Songs, albums, playlists, and artist information
-
-2. **Piped (YouTube)**: Uses Piped API for YouTube data
-   - Base URL: `https://pipedapi.kavin.rocks`
-   - Benefits: No API key required, privacy-focused, no quotas
-   - Filter: `music_songs` for music-specific results
-
-### Architecture
-
-```
-bloomee_node_api/
-├── index.js          # Main server file with API logic
-├── package.json      # Dependencies and scripts
-└── README.md         # This file
-```
-
-## Dependencies
-
-- **express**: Web framework
-- **axios**: HTTP client for API requests
-- **cors**: Enable CORS for cross-origin requests
-
-## Environment Variables
-
-- `PORT`: Server port (default: 3000)
-
-## Example Integration
-
-### JavaScript/Fetch
-```javascript
-fetch('http://localhost:3000/search?query=believer')
-  .then(res => res.json())
-  .then(data => {
-    console.log('Saavn results:', data.saavn);
-    console.log('YouTube results:', data.youtube);
-  });
-```
-
-### PowerShell
-```powershell
-Invoke-RestMethod -Uri "http://localhost:3000/search?query=believer"
-```
-
-## Notes
-
-- The API does not compromise on result quality - it uses the same data sources as Bloomee Tunes
-- No authentication required for basic usage
-- Rate limiting is handled by the upstream APIs (JioSaavn and Piped)
-
-## License
-
+## 📝 License
 ISC

@@ -1,7 +1,6 @@
 ﻿const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
-const { Innertube, UniversalCache } = require('youtubei.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,6 +13,7 @@ let yt = null;
 async function getYT() {
     if (yt) return yt;
     try {
+        const { Innertube, UniversalCache } = await import('youtubei.js');
         yt = await Innertube.create({
             cache: new UniversalCache(false),
             generate_session_locally: true,

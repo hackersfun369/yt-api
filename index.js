@@ -1,6 +1,8 @@
-﻿const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
+﻿import express from 'express';
+import axios from 'axios';
+import cors from 'cors';
+import { Innertube, UniversalCache } from 'youtubei.js';
+import { fileURLToPath } from 'url';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,10 +13,10 @@ app.use(express.json());
 // Initialize InnerTube with Android client (stable)
 let yt = null;
 let lastInitError = null;
+
 async function getYT() {
     if (yt) return yt;
     try {
-        const { Innertube, UniversalCache } = await import('youtubei.js');
         yt = await Innertube.create({
             cache: new UniversalCache(false),
             generate_session_locally: true,
@@ -31,8 +33,9 @@ async function getYT() {
     }
 }
 
-// Global initialization for local development
-if (require.main === module) {
+// Check if running directly (for local development)
+const isMain = process.argv[1] && (process.argv[1] === fileURLToPath(import.meta.url) || process.argv[1].endsWith('index.js'));
+if (isMain) {
     getYT();
 }
 
@@ -43,7 +46,11 @@ app.get('/youtube/suggestions', async (req, res) => {
     const { query } = req.query;
     if (!query) return res.status(400).send({ error: 'Query parameter is required' });
     const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
+    if (!ytClient) return res.status(503).send({
+        error: 'YouTube client not ready',
+        details: lastInitError,
+        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
+    });
     try {
         const suggestions = await ytClient.music.getSearchSuggestions(query);
         res.send(suggestions);
@@ -64,7 +71,6 @@ app.get('/youtube/search', async (req, res) => {
     });
     try {
         const results = await ytClient.music.search(query, { type: 'song' });
-        // The results usually have a 'songs' property with contents
         const songs = results.songs?.contents || [];
         res.send({ items: songs });
     } catch (error) {
@@ -77,7 +83,11 @@ app.get('/search', async (req, res) => {
     const query = req.query.query;
     if (!query) return res.status(400).send({ error: 'Query parameter is required' });
     const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
+    if (!ytClient) return res.status(503).send({
+        error: 'YouTube client not ready',
+        details: lastInitError,
+        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
+    });
     try {
         const results = await ytClient.music.search(query, { type: 'song' });
         const songs = results.songs?.contents || [];
@@ -92,7 +102,11 @@ app.get('/stream/youtube/:videoId', async (req, res) => {
     const { videoId } = req.params;
     if (!videoId) return res.status(400).send({ error: 'Video ID is required' });
     const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
+    if (!ytClient) return res.status(503).send({
+        error: 'YouTube client not ready',
+        details: lastInitError,
+        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
+    });
 
     try {
         const info = await ytClient.getBasicInfo(videoId);
@@ -267,14 +281,13 @@ app.get('/', (req, res) => {
     });
 });
 
-// Node server listener (local development)
-if (require.main === module) {
+if (isMain) {
     app.listen(PORT, () => {
         console.log(`Server is running on http://localhost:${PORT}`);
     });
 }
 
 // Export for serverless (Netlify)
-module.exports = app;
+export default app;
 
 process.on('uncaughtException', (err) => console.error('Caught exception:', err));

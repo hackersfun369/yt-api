@@ -129,46 +129,41 @@ app.get('/stream/youtube/:videoId', async (req, res) => {
     });
 
     try {
-        let info = await ytClient.getInfo(videoId);
+        let info = null;
         let bestFormat = null;
 
-        // Try to choose the best audio format from the primary info
-        try {
-            bestFormat = info.chooseFormat({ type: 'audio', quality: 'best' });
-        } catch (e) {
-            console.log('Primary info chooseFormat failed');
-        }
+        // Strategy: Multi-Client Rotation
+        // Different clients (IOS, TV, ANDROID) work better for different tracks/IPs
+        const clientTypes = ['IOS', 'WEB_REMIX', 'TV_EMBED', 'ANDROID'];
 
-        // Fallback 1: Manual search in primary info
-        if (!bestFormat) {
-            const formats = [
-                ...(info.streaming_data?.formats || []),
-                ...(info.streaming_data?.adaptive_formats || [])
-            ];
-            const audioFormats = formats.filter(f => f.mime_type && f.mime_type.includes('audio'));
-            if (audioFormats.length > 0) {
-                audioFormats.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
-                bestFormat = audioFormats[0];
-            }
-        }
-
-        // Fallback 2: TV_EMBED client (Very powerful for restricted videos/server IPs)
-        if (!bestFormat) {
-            console.log('Standard client failed, attempting TV_EMBED fallback...');
-            const { Innertube } = await import('youtubei.js');
-            const tvClient = await Innertube.create({ client_type: 'TV_EMBED' });
-            info = await tvClient.getInfo(videoId);
+        for (const type of clientTypes) {
             try {
+                console.log(`Attempting extraction with client: ${type}`);
+                const { Innertube, UniversalCache } = await import('youtubei.js');
+                const tempClient = await Innertube.create({
+                    client_type: type,
+                    cache: new UniversalCache(false)
+                });
+
+                info = await tempClient.getInfo(videoId);
                 bestFormat = info.chooseFormat({ type: 'audio', quality: 'best' });
-            } catch (e) { }
+
+                if (bestFormat) {
+                    console.log(`✅ Extraction successful using ${type} client`);
+                    // Update main ytClient for future use if it was the issue
+                    yt = tempClient;
+                    break;
+                }
+            } catch (e) {
+                console.log(`Client ${type} failed for ${videoId}: ${e.message}`);
+            }
         }
 
         if (!bestFormat) {
             return res.status(404).send({
-                error: 'No audio streams found',
+                error: 'No audio streams found after multiple attempts',
                 videoId: videoId,
-                title: info.basic_info?.title || 'Unknown',
-                message: 'YouTube is restricting this stream from serverless environments. Please try a different version/track.'
+                message: 'YouTube is heavily restricting this track on this server IP. Try a different version or a non-official video.'
             });
         }
 

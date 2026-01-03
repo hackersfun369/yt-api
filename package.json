@@ -1,6 +1,9 @@
 {
-  "name": "bloomee-node-api",
+  "name": "yt-api",
   "version": "1.0.0",
+  "engines": {
+    "node": "18.x"
+  },
   "description": "Node.js API for Bloomee Tunes data fetching",
   "main": "index.js",
   "scripts": {

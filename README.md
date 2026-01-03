@@ -10,6 +10,7 @@ A high-performance, serverless-ready REST API for YouTube Music data. This API p
 - 🔄 **Continuous Playback**: Up-Next/Queue suggestions to build a seamless player experience.
 - ☁️ **Serverless First**: Fully compatible with Netlify Functions using `esbuild` and `serverless-http`.
 - ⚡ **Native ESM**: Built with modern JavaScript (ES Modules) for speed and compatibility.
+- 💎 **Adaptive Streaming Engine**: Smart multi-client fallback (iOS, Web Remix, TV, Android) to bypass restrictions and minimize 400 errors.
 
 ## 📦 Deployment on Netlify
 

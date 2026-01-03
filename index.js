@@ -55,12 +55,14 @@ app.get('/youtube/player/:videoId', async (req, res) => {
         });
 
         const info = await webClient.getInfo(videoId);
+        const player = webClient.session.player;
+        const playerUrl = player.url.startsWith('http') ? player.url : `https://www.youtube.com${player.url}`;
 
         res.send({
             videoId: videoId,
             streamingData: info.streaming_data,
-            playerUrl: `https://www.youtube.com${webClient.session.player.url}`,
-            signatureTimestamp: webClient.session.player.sts,
+            playerUrl: playerUrl,
+            signatureTimestamp: player.sts,
             basicInfo: info.basic_info
         });
     } catch (error) {

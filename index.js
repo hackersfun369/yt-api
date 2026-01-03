@@ -270,7 +270,7 @@ app.get('/youtube/upnext/:videoId', async (req, res) => {
 
 app.get('/', (req, res) => {
     res.send({
-        message: 'Bloomee YouTube Music API (Netlify Serverless Exclusive)',
+        message: 'Nirvay YouTube Music API (Netlify Serverless Exclusive)',
         endpoints: [
             '/youtube/home', '/youtube/search?query=...', '/youtube/suggestions?query=...',
             '/youtube/explore', '/youtube/moods', '/stream/youtube/:videoId',

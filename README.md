@@ -5,22 +5,14 @@ A high-performance, serverless-ready REST API for YouTube Music data. This API p
 ## 🌟 Key Features
 
 - 🎹 **Pro YouTube Music Data**: Official search results, home feeds, charts, and exploration.
-- 🎧 **High-Quality Streaming**: Reliable direct audio URL extraction via Android InnerTube protocol.
+- 🎧 **High-Quality Streaming**: Reliable direct audio URL extraction via Android/iOS InnerTube protocols.
 - 📜 **Official Lyrics**: Fetch song lyrics directly from YouTube Music.
 - 🔄 **Continuous Playback**: Up-Next/Queue suggestions to build a seamless player experience.
 - ☁️ **Serverless First**: Fully compatible with Netlify Functions using `esbuild` and `serverless-http`.
 - ⚡ **Native ESM**: Built with modern JavaScript (ES Modules) for speed and compatibility.
-- 💎 **Adaptive Streaming Engine**: Smart multi-client fallback (iOS, Web Remix, TV, Android) to bypass restrictions and minimize 400 errors.
+- 💎 **Adaptive Streaming Engine**: Smart multi-client fallback to bypass restrictions and minimize 400 errors.
 
-## 📦 Deployment on Netlify
-
-This project is pre-configured for instant deployment on Netlify.
-
-1.  **Push to GitHub**: Push your local repository to a new GitHub repo.
-2.  **Import to Netlify**: Select the repository in your Netlify dashboard.
-3.  **Environment Settings**: 
-    - Set `NODE_VERSION` to `18`.
-    - (The `netlify.toml` file will handle the rest automatically).
+---
 
 ## 🛠️ API Reference
 
@@ -47,19 +39,6 @@ This project is pre-configured for instant deployment on Netlify.
 | `/youtube/upnext/:videoId` | `GET` | Continuous queue suggestions (Autoplay) |
 | `/youtube/related/:videoId` | `GET` | Related tracks and videos |
 
----
-
-## 💎 Hybrid Mode (Client-Side Extraction)
-
-For professional mobile apps, use `/youtube/player/:videoId` to get raw metadata. This allows your app to bypass server-side IP restrictions and achieve zero latency.
-
-**Response Structure:**
-- `streamingData`: Raw YouTube formats.
-- `playerUrl`: Current `base.js` link for deciphering logic.
-- `signatureTimestamp`: Required for signature verification.
-
-👉 **[View Full Client Implementation Guide](file:///c:/Users/sathy/Downloads/bloomee_tunes_windows_x64_v2.13.3+188/bloomee_node_api/CLIENT_IMPLEMENTATION.md)**
-
 ### 4. Metadata
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
@@ -67,22 +46,74 @@ For professional mobile apps, use `/youtube/player/:videoId` to get raw metadata
 | `/youtube/album/:id` | `GET` | Full tracklist for any album/EP |
 | `/youtube/playlist/:id` | `GET` | Content of any public playlist |
 
-## 🚀 Local Development
+---
 
+## 💎 Hybrid Mode (Client-Side Extraction)
+
+For professional mobile apps, use `/youtube/player/:videoId` to get raw metadata. This allows your app to bypass server-side IP restrictions and achieve zero latency.
+
+### 🔄 The Workflow
+1.  **Call API**: Get metadata from `/youtube/player/:videoId`.
+2.  **Fetch Player**: Download the JavaScript file from the `playerUrl` provided.
+3.  **Decipher**: Use the `base.js` logic to unscramble the `signatureCipher`.
+4.  **Play**: Pass the resulting URL to your player.
+
+### 🛠️ Client Implementation Example (JavaScript)
+```javascript
+async function getProAudioUrl(videoId) {
+    const response = await fetch(`https://your-api.netlify.app/youtube/player/${videoId}`);
+    const { streamingData, playerUrl } = await response.json();
+    const format = streamingData.adaptiveFormats.find(f => f.mimeType.includes('audio'));
+    
+    if (format.url) return format.url;
+    // Decipher format.signatureCipher using logic from playerUrl...
+}
+```
+
+---
+
+## ⚙️ Technical Architecture
+
+This project implements several advanced logic patterns to ensure reliability on serverless platforms:
+
+### 1. Native ES Modules (ESM)
+The entire project uses `"type": "module"`. This allows for faster loading times and compatibility with the latest versions of modern libraries like `youtubei.js`.
+
+### 2. Adaptive Streaming Engine
+The `/stream/youtube` endpoint uses a **Multi-Client Rotation** logic. If a request fails due to a `400 Bad Request` (common on cloud IPs), the engine automatically retries with a different client identity:
+- **IOS**: Highly stable for official music tracks.
+- **WEB_REMIX**: Optimized for YouTube Music web data.
+- **TV_EMBED**: Powerful for bypassing embed restrictions.
+- **ANDROID**: General fallback.
+
+### 3. Dynamic Initialization
+To solve "Cold Start" issues in serverless functions, the `getYT()` function implements a singleton pattern that lazily initializes the YouTube client only when first needed, ensuring the function doesn't time out during startup.
+
+### 4. Metadata Flattening
+The `/youtube/songs` endpoint implements a custom transformer that maps complex, deeply nested InnerTube objects into a flat, developer-friendly JSON structure (ID, Name, Singers, Album, Duration, Image).
+
+---
+
+## 📦 Deployment
+
+### Netlify Deployment
+1.  Push your repository to GitHub.
+2.  Connect the repository to Netlify.
+3.  **Environment Variables**: Ensure `NODE_VERSION` is set to `18` or higher.
+4.  The `netlify.toml` automatically configures `esbuild` for optimal function bundling.
+
+### Local Development
 ```bash
-# Install dependencies
 npm install
-
-# Start local server
 npm start
 ```
-The server will run on `http://localhost:3000`.
+Server runs on `http://localhost:3000`.
 
 ## 📂 Project Structure
-- `index.js`: Main API logic (Native ESM).
+- `index.js`: Main API logic & Express setup.
 - `functions/api.js`: Netlify serverless entry point.
-- `netlify.toml`: Deployment and bundling configuration.
-- `package.json`: Dependency management and Node version settings.
+- `netlify.toml`: Deployment and `esbuild` configurations.
+- `package.json`: Dependency and engine settings.
 
 ## 📝 License
 ISC

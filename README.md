@@ -14,6 +14,17 @@ A high-performance, serverless-ready REST API for YouTube Music data. This API p
 
 ---
 
+## 🌍 Device Compatibility
+
+This API is a **Universal REST API**. Because it uses standard HTTP and JSON, it works on any device with an internet connection:
+
+- **📱 Mobile Apps**: (Flutter, React Native, Java, Swift) - Perfect for integration.
+- **💻 Web Browsers**: (React, Next.js, Vue, Vanilla JS) - CORS is fully enabled.
+- **🖥️ Desktop Apps**: (Electron, Python, C#) - Stable and high performance.
+- **📺 Smart TVs & IoT**: Any device that can send an HTTP request.
+
+---
+
 ## 🛠️ API Reference
 
 ### 1. Music Discovery

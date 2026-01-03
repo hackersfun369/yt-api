@@ -18,12 +18,11 @@ async function getYT() {
         const { Innertube, UniversalCache } = await import('youtubei.js');
         yt = await Innertube.create({
             cache: new UniversalCache(false),
-            generate_session_locally: true,
             device_category: 'mobile',
-            // ANDROID_MUSIC client is more resilient for music tracks
-            client_type: 'ANDROID_MUSIC'
+            // Reverting to ANDROID as it has better general compatibility for all video types
+            client_type: 'ANDROID'
         });
-        console.log('✅ YouTube InnerTube Client Initialized (Android Music Mode)');
+        console.log('✅ YouTube InnerTube Client Initialized (Android Mode)');
         lastInitError = null;
         return yt;
     } catch (e) {
@@ -192,7 +191,13 @@ app.get('/stream/youtube/:videoId', async (req, res) => {
             source: 'YouTube (InnerTube/Android)'
         });
     } catch (error) {
-        res.status(500).send({ error: 'Failed to extract stream', message: error.message });
+        console.error('Streaming error:', error);
+        res.status(500).send({
+            error: 'Failed to extract stream',
+            message: error.message,
+            // Include YouTube's specific error reason if visible
+            details: error.response?.data?.playabilityStatus?.reason || 'Protocol Error (400) - Try another track or check region restrictions.'
+        });
     }
 });
 

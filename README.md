@@ -42,9 +42,21 @@ This project is pre-configured for instant deployment on Netlify.
 ### 3. Song Details & Playback
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
+| `/youtube/player/:videoId` | `GET` | **Hybrid / Pro**: Raw metadata for client-side extraction |
 | `/youtube/lyrics/:videoId` | `GET` | Official song lyrics (if available) |
 | `/youtube/upnext/:videoId` | `GET` | Continuous queue suggestions (Autoplay) |
 | `/youtube/related/:videoId` | `GET` | Related tracks and videos |
+
+---
+
+## 💎 Hybrid Mode (Client-Side Extraction)
+
+For professional mobile apps, use `/youtube/player/:videoId` to get raw metadata. This allows your app to bypass server-side IP restrictions and achieve zero latency.
+
+**Response Structure:**
+- `streamingData`: Raw YouTube formats.
+- `playerUrl`: Current `base.js` link for deciphering logic.
+- `signatureTimestamp`: Required for signature verification.
 
 ### 4. Metadata
 | Endpoint | Method | Description |

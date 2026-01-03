@@ -39,6 +39,35 @@ if (!process.env.NETLIFY && !process.env.LAMBDA_TASK_ROOT) {
 
 // --- YouTube Music API Logic ---
 
+// Raw Metadata for Client-Side Extraction (Hybrid Mode)
+app.get('/youtube/player/:videoId', async (req, res) => {
+    const { videoId } = req.params;
+    if (!videoId) return res.status(400).send({ error: 'Video ID required' });
+    const ytClient = await getYT();
+    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
+
+    try {
+        // Need to use WEB client for raw metadata to get standard signatures
+        const { Innertube, UniversalCache } = await import('youtubei.js');
+        const webClient = await Innertube.create({
+            cache: new UniversalCache(false),
+            client_type: 'WEB'
+        });
+
+        const info = await webClient.getInfo(videoId);
+
+        res.send({
+            videoId: videoId,
+            streamingData: info.streaming_data,
+            playerUrl: `https://www.youtube.com${webClient.session.player.url}`,
+            signatureTimestamp: webClient.session.player.sts,
+            basicInfo: info.basic_info
+        });
+    } catch (error) {
+        res.status(500).send({ error: 'Failed to fetch player metadata', message: error.message });
+    }
+});
+
 // YouTube Music Search Suggestions
 app.get('/youtube/suggestions', async (req, res) => {
     const { query } = req.query;

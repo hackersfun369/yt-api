@@ -131,16 +131,17 @@ app.get('/stream/youtube/:videoId', async (req, res) => {
     });
 
     try {
-        const info = await ytClient.getBasicInfo(videoId);
+        let info = await ytClient.getFullInfo(videoId);
         let bestFormat = null;
 
-        // Try to choose the best audio format
+        // Try to choose the best audio format from the primary info
         try {
             bestFormat = info.chooseFormat({ type: 'audio', quality: 'best' });
         } catch (e) {
-            console.log('chooseFormat failed, falling back to manual search');
+            console.log('Primary info chooseFormat failed');
         }
 
+        // Fallback 1: Manual search in primary info
         if (!bestFormat) {
             const formats = [
                 ...(info.streaming_data?.formats || []),
@@ -153,13 +154,23 @@ app.get('/stream/youtube/:videoId', async (req, res) => {
             }
         }
 
+        // Fallback 2: TV_EMBED client (Very powerful for restricted videos/server IPs)
         if (!bestFormat) {
-            console.error('No audio formats found in streaming_data:', JSON.stringify(info.streaming_data));
+            console.log('Standard client failed, attempting TV_EMBED fallback...');
+            const { Innertube } = await import('youtubei.js');
+            const tvClient = await Innertube.create({ client_type: 'TV_EMBED' });
+            info = await tvClient.getFullInfo(videoId);
+            try {
+                bestFormat = info.chooseFormat({ type: 'audio', quality: 'best' });
+            } catch (e) { }
+        }
+
+        if (!bestFormat) {
             return res.status(404).send({
                 error: 'No audio streams found',
                 videoId: videoId,
-                title: info.basic_info.title,
-                message: 'This often happens with restricted or official music videos. Try another track.'
+                title: info.basic_info?.title || 'Unknown',
+                message: 'YouTube is restricting this stream from serverless environments. Please try a different version/track.'
             });
         }
 

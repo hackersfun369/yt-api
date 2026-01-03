@@ -1,5 +1,4 @@
 ﻿import express from 'express';
-import axios from 'axios';
 import cors from 'cors';
 import { Innertube, UniversalCache } from 'youtubei.js';
 import { fileURLToPath } from 'url';

@@ -10,6 +10,7 @@ app.use(express.json());
 
 // Initialize InnerTube with Android client (stable)
 let yt = null;
+let lastInitError = null;
 async function getYT() {
     if (yt) return yt;
     try {
@@ -21,9 +22,11 @@ async function getYT() {
             client_type: 'ANDROID'
         });
         console.log('✅ YouTube InnerTube Client Initialized (Android Mode)');
+        lastInitError = null;
         return yt;
     } catch (e) {
         console.error('❌ Failed to initialize InnerTube:', e);
+        lastInitError = e.message;
         return null;
     }
 }
@@ -54,7 +57,11 @@ app.get('/youtube/search', async (req, res) => {
     const query = req.query.query;
     if (!query) return res.status(400).send({ error: 'Query parameter is required' });
     const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
+    if (!ytClient) return res.status(503).send({
+        error: 'YouTube client not ready',
+        details: lastInitError,
+        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
+    });
     try {
         const results = await ytClient.music.search(query, { type: 'song' });
         // The results usually have a 'songs' property with contents
@@ -131,7 +138,11 @@ app.get('/stream/youtube/:videoId', async (req, res) => {
 // Browsing & Content
 app.get('/youtube/home', async (req, res) => {
     const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
+    if (!ytClient) return res.status(503).send({
+        error: 'YouTube client not ready',
+        details: lastInitError,
+        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
+    });
     try {
         const home = await ytClient.music.getHomeFeed();
         res.send(home);
@@ -140,7 +151,11 @@ app.get('/youtube/home', async (req, res) => {
 
 app.get('/youtube/explore', async (req, res) => {
     const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
+    if (!ytClient) return res.status(503).send({
+        error: 'YouTube client not ready',
+        details: lastInitError,
+        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
+    });
     try {
         const explore = await ytClient.music.getExplore();
         res.send(explore);
@@ -149,7 +164,11 @@ app.get('/youtube/explore', async (req, res) => {
 
 app.get('/youtube/moods', async (req, res) => {
     const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
+    if (!ytClient) return res.status(503).send({
+        error: 'YouTube client not ready',
+        details: lastInitError,
+        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
+    });
     try {
         const moods = await ytClient.music.getExplore();
         res.send(moods);
@@ -159,7 +178,11 @@ app.get('/youtube/moods', async (req, res) => {
 // Details & Metadata
 app.get('/youtube/album/:id', async (req, res) => {
     const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
+    if (!ytClient) return res.status(503).send({
+        error: 'YouTube client not ready',
+        details: lastInitError,
+        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
+    });
     try {
         const album = await ytClient.music.getAlbum(req.params.id);
         res.send(album);
@@ -168,7 +191,11 @@ app.get('/youtube/album/:id', async (req, res) => {
 
 app.get('/youtube/playlist/:id', async (req, res) => {
     const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
+    if (!ytClient) return res.status(503).send({
+        error: 'YouTube client not ready',
+        details: lastInitError,
+        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
+    });
     try {
         const playlist = await ytClient.music.getPlaylist(req.params.id);
         res.send(playlist);
@@ -177,7 +204,11 @@ app.get('/youtube/playlist/:id', async (req, res) => {
 
 app.get('/youtube/artist/:id', async (req, res) => {
     const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
+    if (!ytClient) return res.status(503).send({
+        error: 'YouTube client not ready',
+        details: lastInitError,
+        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
+    });
     try {
         const artist = await ytClient.music.getArtist(req.params.id);
         res.send(artist);
@@ -187,7 +218,11 @@ app.get('/youtube/artist/:id', async (req, res) => {
 // Interactive Features
 app.get('/youtube/lyrics/:videoId', async (req, res) => {
     const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
+    if (!ytClient) return res.status(503).send({
+        error: 'YouTube client not ready',
+        details: lastInitError,
+        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
+    });
     try {
         const lyrics = await ytClient.music.getLyrics(req.params.videoId);
         res.send(lyrics || { error: 'No lyrics found for this song' });
@@ -196,7 +231,11 @@ app.get('/youtube/lyrics/:videoId', async (req, res) => {
 
 app.get('/youtube/related/:videoId', async (req, res) => {
     const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
+    if (!ytClient) return res.status(503).send({
+        error: 'YouTube client not ready',
+        details: lastInitError,
+        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
+    });
     try {
         const related = await ytClient.music.getRelated(req.params.videoId);
         res.send(related);
@@ -205,7 +244,11 @@ app.get('/youtube/related/:videoId', async (req, res) => {
 
 app.get('/youtube/upnext/:videoId', async (req, res) => {
     const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
+    if (!ytClient) return res.status(503).send({
+        error: 'YouTube client not ready',
+        details: lastInitError,
+        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
+    });
     try {
         const queue = await ytClient.music.getUpNext(req.params.videoId);
         res.send(queue);

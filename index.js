@@ -18,11 +18,9 @@ async function getYT() {
         const { Innertube, UniversalCache } = await import('youtubei.js');
         yt = await Innertube.create({
             cache: new UniversalCache(false),
-            device_category: 'mobile',
-            // Reverting to ANDROID as it has better general compatibility for all video types
-            client_type: 'ANDROID'
+            generate_session_locally: true
         });
-        console.log('✅ YouTube InnerTube Client Initialized (Android Mode)');
+        console.log('✅ YouTube InnerTube Client Initialized');
         lastInitError = null;
         return yt;
     } catch (e) {
@@ -131,7 +129,7 @@ app.get('/stream/youtube/:videoId', async (req, res) => {
     });
 
     try {
-        let info = await ytClient.getFullInfo(videoId);
+        let info = await ytClient.getInfo(videoId);
         let bestFormat = null;
 
         // Try to choose the best audio format from the primary info
@@ -159,7 +157,7 @@ app.get('/stream/youtube/:videoId', async (req, res) => {
             console.log('Standard client failed, attempting TV_EMBED fallback...');
             const { Innertube } = await import('youtubei.js');
             const tvClient = await Innertube.create({ client_type: 'TV_EMBED' });
-            info = await tvClient.getFullInfo(videoId);
+            info = await tvClient.getInfo(videoId);
             try {
                 bestFormat = info.chooseFormat({ type: 'audio', quality: 'best' });
             } catch (e) { }

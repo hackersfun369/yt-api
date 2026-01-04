@@ -297,7 +297,8 @@
                                     method: input.method,
                                     headers: input.headers,
                                     body: input.body,
-                                    mode: 'cors'
+                                    mode: 'cors',
+                                    duplex: 'half' // Required for streaming bodies in Chrome
                                 });
                             }
 

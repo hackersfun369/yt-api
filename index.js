@@ -59,11 +59,22 @@ app.get('/youtube/player/:videoId', async (req, res) => {
         const player = webClient.session.player;
         const playerUrl = player.url.startsWith('http') ? player.url : `https://www.youtube.com${player.url}`;
 
+        // Get session context details for client-side handshake
+        const context = webClient.session.context;
+
         res.send({
             videoId: videoId,
-            streamingData: info || null,
+            // info contains the raw YouTube response (includes streamingData, playabilityStatus, etc.)
+            rawInfo: info,
             playerUrl: playerUrl,
             signatureTimestamp: player.signature_timestamp || player.sts || null,
+            // Handshake data for professional client extraction
+            handshake: {
+                visitorData: context?.client?.visitorData || null,
+                clientName: context?.client?.clientName || 'WEB',
+                clientVersion: context?.client?.clientVersion || '2.20240210.01.00',
+                userAgent: webClient.session.user_agent
+            },
             basicInfo: info.basic_info
         });
     } catch (error) {

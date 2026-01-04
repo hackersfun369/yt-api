@@ -52,24 +52,28 @@ app.get('/youtube/player/:videoId', async (req, res) => {
         const info = await ytClient.getInfo(videoId);
         const player = ytClient.session.player;
 
-        if (!info.streaming_data) {
+        const response = {
+            videoId: videoId,
+            streamingData: info.streaming_data || null,
+            playerUrl: null,
+            signatureTimestamp: null,
+            basicInfo: info.basic_info || null
+        };
+
+        if (player) {
+            response.playerUrl = player.url.startsWith('http') ? player.url : `https://www.youtube.com${player.url}`;
+            response.signatureTimestamp = player.signature_timestamp || player.sts || null;
+        }
+
+        if (!response.streamingData) {
             return res.status(403).send({
+                ...response,
                 error: 'Metadata extraction failed',
-                videoId: videoId,
-                message: 'Streaming data missing. YouTube is still restricting this track on the server.',
-                basicInfo: info.basic_info
+                message: 'Streaming data missing. YouTube is still restricting this track on the server.'
             });
         }
 
-        const playerUrl = player.url.startsWith('http') ? player.url : `https://www.youtube.com${player.url}`;
-
-        res.send({
-            videoId: videoId,
-            streamingData: info.streaming_data,
-            playerUrl: playerUrl,
-            signatureTimestamp: player.sts,
-            basicInfo: info.basic_info
-        });
+        res.send(response);
     } catch (error) {
         console.error('[Player] Error:', error.message);
         res.status(500).send({

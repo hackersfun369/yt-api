@@ -117,6 +117,57 @@ app.get('/youtube/player/:videoId', async (req, res) => {
     }
 });
 
+// --- Local CORS Proxy for Test Page ---
+// This endpoint simulates a "Native App" environment by forwarding requests
+// from the browser (test_hybrid.html) to YouTube without CORS restrictions.
+app.all('/proxy', async (req, res) => {
+    const targetUrl = req.query.url;
+    if (!targetUrl) return res.status(400).send('Missing url query parameter');
+
+    try {
+        // Forward the request to the target URL
+        const response = await fetch(targetUrl, {
+            method: req.method,
+            headers: req.headers, // Pass original headers (including YouTube-specific ones)
+            body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined,
+            duplex: 'half'
+        });
+
+        // Copy key headers from the response
+        res.status(response.status);
+        res.setHeader('Content-Type', response.headers.get('content-type'));
+
+        // Stream the response body back to the client
+        if (response.body) {
+            const reader = response.body.getReader();
+            const stream = new ReadableStream({
+                start(controller) {
+                    return pump();
+                    function pump() {
+                        return reader.read().then(({ done, value }) => {
+                            if (done) {
+                                controller.close();
+                                return;
+                            }
+                            controller.enqueue(value);
+                            res.write(value); // key: write directly to express response
+                            return pump();
+                        });
+                    }
+                }
+            });
+            await stream; // waiting for stream to finish
+            res.end();
+        } else {
+            res.end();
+        }
+
+    } catch (e) {
+        console.error('[Proxy] Error:', e);
+        res.status(500).send(e.message);
+    }
+});
+
 // YouTube Music Search Suggestions
 app.get('/youtube/suggestions', async (req, res) => {
     const { query } = req.query;

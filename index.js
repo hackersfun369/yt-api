@@ -47,18 +47,31 @@ app.get('/youtube/player/:videoId', async (req, res) => {
     if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
 
     try {
+        const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
         let info = null;
         let player = null;
         let streamingData = null;
 
-        // Strategy: Multi-Client Rotation for Metadata
+        // Strategy: Multi-Client Rotation + Client IP Forwarding
         const clientTypes = ['WEB', 'WEB_REMIX', 'IOS', 'TV_EMBED', 'ANDROID'];
 
         for (const type of clientTypes) {
             try {
-                console.log(`[Player] Fetching metadata with client: ${type}`);
+                console.log(`[Player] Attempting with ${type} (IP: ${clientIp})`);
                 const { Innertube, UniversalCache } = await import('youtubei.js');
+
+                // Use a fresh fetch function that includes the client IP to bypass server blocks
+                const fetcher = async (url, options) => {
+                    options.headers = {
+                        ...options.headers,
+                        'X-Forwarded-For': clientIp,
+                        'User-Agent': options.headers?.['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    };
+                    return fetch(url, options);
+                };
+
                 const tempClient = await Innertube.create({
+                    fetch: fetcher,
                     cache: new UniversalCache(false),
                     client_type: type
                 });
@@ -67,14 +80,12 @@ app.get('/youtube/player/:videoId', async (req, res) => {
                 streamingData = info.streaming_data;
 
                 if (streamingData) {
-                    console.log(`✅ [Player] Metadata success with ${type}`);
+                    console.log(`✅ [Player] Success using ${type}`);
                     player = tempClient.session.player;
                     break;
-                } else {
-                    console.log(`⚠️ [Player] Client ${type} returned no streaming_data`);
                 }
             } catch (e) {
-                console.log(`❌ [Player] Client ${type} error: ${e.message}`);
+                console.log(`❌ [Player] ${type} failed: ${e.message}`);
             }
         }
 

@@ -127,6 +127,44 @@ app.get('/youtube/player/:videoId', async (req, res) => {
 // --- Local CORS Proxy for Test Page ---
 // This endpoint simulates a "Native App" environment by forwarding requests
 // from the browser (test_hybrid.html) to YouTube without CORS restrictions.
+// --- Fast Stream Endpoint (using ytdl-core) ---
+import ytdl from '@distube/ytdl-core';
+
+// This endpoint is designed for "Zero Latency" playback.
+// It redirects the client directly to the Google Video URL.
+app.get('/youtube/stream_fast/:videoId', async (req, res) => {
+    const { videoId } = req.params;
+    try {
+        // 1. Get Video Info (Fast Server-Side Fetch)
+        const info = await ytdl.getInfo(videoId, {
+            requestOptions: {
+                headers: {
+                    // Pass cookies if available to bypass age/region checks
+                    cookie: process.env.YT_COOKIES || ''
+                }
+            }
+        });
+
+        // 2. Select Best Audio Format
+        const format = ytdl.chooseFormat(info.formats, {
+            quality: 'highestaudio',
+            filter: 'audioonly'
+        });
+
+        if (!format || !format.url) {
+            return res.status(404).send('No playabale audio found');
+        }
+
+        // 3. ZERO LATENCY: Redirect client directly to the stream
+        // This skips proxying data through our server.
+        res.redirect(format.url);
+
+    } catch (error) {
+        console.error('[FastStream] Error:', error.message);
+        res.status(500).send({ error: 'Stream extraction failed', message: error.message });
+    }
+});
+
 app.all('/proxy', async (req, res) => {
     const targetUrl = req.query.url;
     if (!targetUrl) return res.status(400).send('Missing url query parameter');

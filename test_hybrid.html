@@ -1,42 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zero-Config Hybrid API Tester 🚀</title>
     <style>
-        body { font-family: 'Segoe UI', system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; color: #333; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h1 { color: #2c3e50; margin-top: 0; }
-        h2 { color: #34495e; font-size: 1.2em; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        input { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; }
-        button { padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
-        button:hover { background: #0056b3; }
-        .status { padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
-        .status.success { background: #d4edda; color: #155724; display: block; }
-        .status.error { background: #f8d7da; color: #721c24; display: block; }
-        .loading { display: none; color: #666; font-style: italic; }
-        
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .result-box { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; }
-        .label { font-size: 0.85em; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
-        .value { font-family: monospace; word-break: break-all; color: #2c3e50; font-weight: 600; }
-        .value.blur { filter: blur(4px); transition: filter 0.3s; cursor: pointer; }
-        .value.blur:hover { filter: none; }
-        
-        pre { background: #2d3436; color: #dfe6e9; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 13px; max-height: 400px; }
-        
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-left: 10px; }
-        .badge-extracted { background: #d4edda; color: #155724; }
-        .badge-broker { background: #cce5ff; color: #004085; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+
+        h2 {
+            color: #34495e;
+            font-size: 1.2em;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            color: #666;
+            font-style: italic;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .result-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .label {
+            font-size: 0.85em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .value {
+            font-family: monospace;
+            word-break: break-all;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .value.blur {
+            filter: blur(4px);
+            transition: filter 0.3s;
+            cursor: pointer;
+        }
+
+        .value.blur:hover {
+            filter: none;
+        }
+
+        pre {
+            background: #2d3436;
+            color: #dfe6e9;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 13px;
+            max-height: 400px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge-extracted {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-broker {
+            background: #cce5ff;
+            color: #004085;
+        }
     </style>
 </head>
+
 <body>
     <div class="card">
         <h1>Zero-Config Hybrid API Tester 🚀</h1>
         <p>Enter a Video ID to verify the "Metadata Broker" response from your local API.</p>
-        
+
         <div class="input-group">
             <input type="text" id="videoId" value="Kc0Nk5KpnvI" placeholder="YouTube Video ID">
             <button onclick="fetchMetadata()">Fetch Metadata</button>
@@ -79,24 +205,36 @@
             </div>
         </div>
 
+        <h2 style="margin-top: 30px;">🎵 Universal Audio Player</h2>
+        <div class="card" style="background: #212121; color: white; text-align: center;">
+            <div id="extractionStatus" style="margin-bottom: 15px; color: #aaaaaa; font-family: monospace;">Waiting to
+                extract...</div>
+            <audio id="audioPlayer" controls style="width: 100%; display: none;"></audio>
+            <div id="finalUrl"
+                style="margin-top: 10px; font-size: 11px; word-break: break-all; color: #888; display: none;"></div>
+        </div>
+
         <h2 style="margin-top: 30px;">📝 Full JSON Response</h2>
         <pre id="jsonOutput">Waiting for request...</pre>
     </div>
 
-    <script>
-        async function fetchMetadata() {
+    <!-- Import YouTubeI.js from CDN for Client-Side Extraction -->
+    <script type="module">
+        import { Innertube, UniversalCache } from 'https://esm.sh/youtubei.js@12.2.0?bundle';
+
+        window.fetchMetadata = async function () {
             const videoId = document.getElementById('videoId').value;
             const status = document.getElementById('status');
             const loading = document.getElementById('loading');
             const results = document.getElementById('results');
-            
+
             // Reset UI
             status.style.display = 'none';
             results.style.display = 'none';
             loading.style.display = 'block';
 
             try {
-                // Call the local API
+                // 1. Call the local API
                 const startTime = performance.now();
                 const res = await fetch(`http://localhost:3000/youtube/player/${videoId}`);
                 const data = await res.json();
@@ -115,17 +253,85 @@
                 document.getElementById('clientName').textContent = data.handshake?.clientName || 'N/A';
                 document.getElementById('clientVersion').textContent = data.handshake?.clientVersion || 'N/A';
                 document.getElementById('visitorData').textContent = data.handshake?.visitorData || 'MISSING';
-                
+
                 document.getElementById('playerUrl').textContent = data.playerUrl || 'MISSING';
                 document.getElementById('sts').textContent = data.signatureTimestamp || 'MISSING';
 
                 // Streaming Data Logic
-                const sd = data.streamingData;
+                const sd = data.streamingData; // Could be from Android fallback or empty
                 const statusEl = document.getElementById('streamingStatus');
-                if (sd && (sd.formats?.length > 0 || sd.adaptiveFormats?.length > 0)) {
-                    statusEl.innerHTML = `<span style="color: green">✅ AVAILABLE (Combined WEB+ANDROID)</span>`;
-                } else {
-                    statusEl.innerHTML = `<span style="color: orange">⚠️ RESTRICTED (Use Handshake keys to extract locally)</span>`;
+
+                let streamUrl = null;
+
+                // 2. Perform Client-Side Extraction
+                const extStatus = document.getElementById('extractionStatus');
+                const player = document.getElementById('audioPlayer');
+                const urlDisplay = document.getElementById('finalUrl');
+
+                extStatus.textContent = "⚙️ Initializing Client-Side Extractor...";
+                extStatus.style.color = "#4fc3f7";
+
+                try {
+                    // Initialize Client with Server Handshake
+                    const yt = await Innertube.create({
+                        cache: new UniversalCache(false),
+                        visitor_data: data.handshake?.visitorData,
+                        client_type: data.handshake?.clientName || 'WEB',
+                        retrieve_player: false
+                    });
+
+                    // If server gave us Android data, use it directly (it's often clean)
+                    if (data.streamingData && data.streamingData.formats) {
+                        statusEl.innerHTML = `<span style="color: green">✅ AVAILABLE (Combined WEB+ANDROID)</span>`;
+                        // Find best audio
+                        const formats = [...(data.streamingData.adaptiveFormats || []), ...(data.streamingData.formats || [])];
+                        const audio = formats.find(f => f.mimeType.includes('audio/mp4'));
+                        if (audio) {
+                            if (audio.url) {
+                                streamUrl = audio.url;
+                                extStatus.textContent = "✅ Playable URL Extracted from Server Data";
+                            } else if (audio.signatureCipher) {
+                                extStatus.textContent = "🔐 Deciphering Signature Locally...";
+                                streamUrl = await yt.session.player.decipher(audio.signatureCipher);
+                                extStatus.textContent = "✅ Deciphered Successfully!";
+                            }
+                        }
+                    }
+                    // If no server data, we fetch it ourselves using the Handshake!
+                    else {
+                        statusEl.innerHTML = `<span style="color: orange">⚠️ RESTRICTED (Performing Local Extraction)</span>`;
+                        extStatus.textContent = "🌍 Fetching Metadata from YouTube (Client-Side)...";
+
+                        // This behaves like a real user browser context
+                        const info = await yt.getInfo(videoId);
+                        const formats = [...(info.streaming_data.adaptiveFormats || []), ...(info.streaming_data.formats || [])];
+                        const audio = formats.find(f => f.mimeType.includes('audio/mp4'));
+
+                        if (audio) {
+                            if (audio.url) {
+                                streamUrl = audio.url;
+                            } else if (audio.signatureCipher) {
+                                streamUrl = await yt.session.player.decipher(audio.signatureCipher);
+                            }
+                            extStatus.textContent = "✅ Extracted via Client-Side Fetch!";
+                        } else {
+                            throw new Error("No audio formats found");
+                        }
+                    }
+
+                    // Play Audio
+                    if (streamUrl) {
+                        player.src = streamUrl;
+                        player.style.display = 'block';
+                        urlDisplay.textContent = streamUrl;
+                        urlDisplay.style.display = 'block';
+                        extStatus.style.color = "#66bb6a";
+                    }
+
+                } catch (clientErr) {
+                    console.error(clientErr);
+                    extStatus.textContent = `❌ Extraction Failed: ${clientErr.message}`;
+                    extStatus.style.color = "#ef5350";
                 }
 
                 // formatted JSON
@@ -133,7 +339,7 @@
 
                 status.textContent = `✅ Success! Data fetched in ${Math.round(endTime - startTime)}ms`;
                 status.className = 'status success';
-                
+
             } catch (err) {
                 loading.style.display = 'none';
                 status.textContent = `❌ Network Error: Failed to connect to localhost:3000. Is the server running?`;
@@ -143,4 +349,5 @@
         }
     </script>
 </body>
+
 </html>

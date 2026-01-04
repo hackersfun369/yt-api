@@ -280,7 +280,29 @@
                         visitor_data: data.handshake?.visitorData,
                         client_type: data.handshake?.clientName || 'WEB',
                         retrieve_player: false,
-                        fetch: (input, init) => window.fetch(input, init)
+                        // FIX: Browser CORS blocks direct YouTube calls. 
+                        // We use a CORS Proxy (corsproxy.io) to simulate a Native App environment.
+                        fetch: async (input, init) => {
+                            let url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+
+                            // Route YouTube requests through proxy
+                            if (url && (url.includes('youtube.com') || url.includes('googlevideo.com'))) {
+                                // Use corsproxy.io to bypass Access-Control-Allow-Origin
+                                url = 'https://corsproxy.io/?' + encodeURIComponent(url);
+                            }
+
+                            if (typeof input === 'object' && input instanceof Request) {
+                                // Recreate request with new URL
+                                return window.fetch(url, {
+                                    method: input.method,
+                                    headers: input.headers,
+                                    body: input.body,
+                                    mode: 'cors'
+                                });
+                            }
+
+                            return window.fetch(url, init);
+                        }
                     });
 
                     // If server gave us Android data, use it directly (it's often clean)

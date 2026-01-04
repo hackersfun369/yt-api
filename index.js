@@ -58,7 +58,7 @@ app.get('/youtube/player/:videoId', async (req, res) => {
 
         res.send({
             videoId: videoId,
-            streamingData: info.streaming_data || null,
+            streamingData: info || null,
             playerUrl: playerUrl,
             signatureTimestamp: player.signature_timestamp || player.sts || null,
             basicInfo: info.basic_info

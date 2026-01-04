@@ -48,38 +48,49 @@ app.get('/youtube/player/:videoId', async (req, res) => {
     try {
         if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
 
-        console.log(`[Player] Fetching metadata for ID: ${videoId} using shared ANDROID session`);
+        console.log(`[Player] Fetching: ${videoId}`);
         const info = await ytClient.getInfo(videoId);
-        const player = ytClient.session.player;
+
+        // Deep Defensive Check
+        if (!info) throw new Error('YouTube returned a completely empty response (null info).');
+
+        const player = ytClient.session?.player || null;
+
+        console.log('[Player] Keys found in info:', Object.keys(info));
 
         const response = {
             videoId: videoId,
-            streamingData: info.streaming_data || null,
+            streamingData: info.streaming_data || info.streamingData || null,
             playerUrl: null,
             signatureTimestamp: null,
-            basicInfo: info.basic_info || null
+            basicInfo: info.basic_info || info.basicInfo || null
         };
 
         if (player) {
-            response.playerUrl = player.url.startsWith('http') ? player.url : `https://www.youtube.com${player.url}`;
-            response.signatureTimestamp = player.signature_timestamp || player.sts || null;
+            try {
+                response.playerUrl = player.url?.startsWith('http') ? player.url : `https://www.youtube.com${player.url}`;
+                response.signatureTimestamp = player.signature_timestamp || player.sts || null;
+            } catch (pErr) {
+                console.log('[Player] Warning: Could not extract player details:', pErr.message);
+            }
         }
 
         if (!response.streamingData) {
             return res.status(403).send({
                 ...response,
                 error: 'Metadata extraction failed',
-                message: 'Streaming data missing. YouTube is still restricting this track on the server.'
+                message: 'YouTube (Server-Side) is blocking the streaming links. Use Local Extraction.'
             });
         }
 
         res.send(response);
     } catch (error) {
-        console.error('[Player] Error:', error.message);
+        console.error('[Player] CRITICAL ERROR:', error);
         res.status(500).send({
             error: 'Failed to fetch player metadata',
             message: error.message,
-            suggestion: 'The server IP might be flagged. Try again in a few minutes or use the desktop app.'
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+            suggestion: 'This track might be Geo-Restricted or require a fresh login.'
         });
     }
 });

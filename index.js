@@ -18,6 +18,7 @@ async function getYT() {
         const { Innertube, UniversalCache } = await import('youtubei.js');
         yt = await Innertube.create({
             cache: new UniversalCache(false),
+            client_type: 'ANDROID', // Most stable for metadata
             generate_session_locally: true
         });
         console.log('✅ YouTube InnerTube Client Initialized');
@@ -44,66 +45,19 @@ app.get('/youtube/player/:videoId', async (req, res) => {
     const { videoId } = req.params;
     if (!videoId) return res.status(400).send({ error: 'Video ID required' });
     const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
-
     try {
-        // Parse the real client IP (taking the first IP if it's a list)
-        const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
-        const clientIp = rawIp.split(',')[0].trim();
+        if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
 
-        let info = null;
-        let player = null;
-        let streamingData = null;
+        console.log(`[Player] Fetching metadata for ID: ${videoId} using shared ANDROID session`);
+        const info = await ytClient.getInfo(videoId);
+        const player = ytClient.session.player;
 
-        const { Innertube, UniversalCache } = await import('youtubei.js');
-
-        // Advanced stealth fetcher to bypass data center blocks
-        const stealthFetcher = async (url, options) => {
-            const userAgent = options.headers?.['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36';
-
-            options.headers = {
-                ...options.headers,
-                'X-Forwarded-For': clientIp,
-                'Forwarded': `for=${clientIp}`,
-                'True-Client-IP': clientIp,
-                'X-Real-IP': clientIp,
-                'User-Agent': userAgent,
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Referer': 'https://www.youtube.com/'
-            };
-            return fetch(url, options);
-        };
-
-        const clientTypes = ['WEB', 'WEB_REMIX', 'IOS', 'TV_EMBED', 'ANDROID'];
-
-        for (const type of clientTypes) {
-            try {
-                console.log(`[Player] Extraction attempt: ${type} for ID: ${videoId}`);
-                const tempClient = await Innertube.create({
-                    fetch: stealthFetcher,
-                    cache: new UniversalCache(false),
-                    client_type: type
-                });
-
-                info = await tempClient.getInfo(videoId);
-                streamingData = info.streaming_data;
-
-                if (streamingData) {
-                    console.log(`✅ [Player] Success: ${type}`);
-                    player = tempClient.session.player;
-                    break;
-                }
-            } catch (e) {
-                console.log(`⚠️ [Player] ${type} failed: ${e.message}`);
-            }
-        }
-
-        if (!streamingData) {
+        if (!info.streaming_data) {
             return res.status(403).send({
                 error: 'Metadata extraction failed',
                 videoId: videoId,
-                message: 'YouTube is blocking all metadata requests for this song on this server IP.',
-                basicInfo: info?.basic_info || null
+                message: 'Streaming data missing. YouTube is still restricting this track on the server.',
+                basicInfo: info.basic_info
             });
         }
 
@@ -111,13 +65,18 @@ app.get('/youtube/player/:videoId', async (req, res) => {
 
         res.send({
             videoId: videoId,
-            streamingData: streamingData,
+            streamingData: info.streaming_data,
             playerUrl: playerUrl,
             signatureTimestamp: player.sts,
             basicInfo: info.basic_info
         });
     } catch (error) {
-        res.status(500).send({ error: 'Failed to fetch player metadata', message: error.message });
+        console.error('[Player] Error:', error.message);
+        res.status(500).send({
+            error: 'Failed to fetch player metadata',
+            message: error.message,
+            suggestion: 'The server IP might be flagged. Try again in a few minutes or use the desktop app.'
+        });
     }
 });
 

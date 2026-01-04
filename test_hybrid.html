@@ -311,7 +311,8 @@
                         statusEl.innerHTML = `<span style="color: green">✅ AVAILABLE (Combined WEB+ANDROID)</span>`;
                         // Find best audio
                         const formats = [...(data.streamingData.adaptiveFormats || []), ...(data.streamingData.formats || [])];
-                        const audio = formats.find(f => f.mimeType.includes('audio/mp4'));
+                        // FIX: Added safe check for mimeType
+                        const audio = formats.find(f => f.mimeType && f.mimeType.includes('audio/mp4'));
                         if (audio) {
                             if (audio.url) {
                                 streamUrl = audio.url;
@@ -331,7 +332,8 @@
                         // This behaves like a real user browser context
                         const info = await yt.getInfo(videoId);
                         const formats = [...(info.streaming_data.adaptiveFormats || []), ...(info.streaming_data.formats || [])];
-                        const audio = formats.find(f => f.mimeType.includes('audio/mp4'));
+                        // FIX: Added safe check for mimeType
+                        const audio = formats.find(f => f.mimeType && f.mimeType.includes('audio/mp4'));
 
                         if (audio) {
                             if (audio.url) {

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zero-Config Hybrid API Tester 🚀</title>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h1 { color: #2c3e50; margin-top: 0; }
+        h2 { color: #34495e; font-size: 1.2em; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; }
+        button { padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        button:hover { background: #0056b3; }
+        .status { padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        .status.success { background: #d4edda; color: #155724; display: block; }
+        .status.error { background: #f8d7da; color: #721c24; display: block; }
+        .loading { display: none; color: #666; font-style: italic; }
+        
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .result-box { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; }
+        .label { font-size: 0.85em; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+        .value { font-family: monospace; word-break: break-all; color: #2c3e50; font-weight: 600; }
+        .value.blur { filter: blur(4px); transition: filter 0.3s; cursor: pointer; }
+        .value.blur:hover { filter: none; }
+        
+        pre { background: #2d3436; color: #dfe6e9; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 13px; max-height: 400px; }
+        
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-left: 10px; }
+        .badge-extracted { background: #d4edda; color: #155724; }
+        .badge-broker { background: #cce5ff; color: #004085; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Zero-Config Hybrid API Tester 🚀</h1>
+        <p>Enter a Video ID to verify the "Metadata Broker" response from your local API.</p>
+        
+        <div class="input-group">
+            <input type="text" id="videoId" value="Kc0Nk5KpnvI" placeholder="YouTube Video ID">
+            <button onclick="fetchMetadata()">Fetch Metadata</button>
+        </div>
+        <div id="loading" class="loading">Connecting to Local API...</div>
+        <div id="status" class="status"></div>
+    </div>
+
+    <div id="results" class="card" style="display: none;">
+        <h2>🔑 Handshake Data (The "Keys")</h2>
+        <div class="grid">
+            <div class="result-box">
+                <div class="label">Context Client</div>
+                <div class="value" id="clientName">-</div>
+            </div>
+            <div class="result-box">
+                <div class="label">Client Version</div>
+                <div class="value" id="clientVersion">-</div>
+            </div>
+            <div class="result-box" style="grid-column: span 2;">
+                <div class="label">Visitor Data (Persistent Session ID)</div>
+                <div class="value blur" id="visitorData">-</div>
+                <div style="font-size: 11px; color: #888; margin-top: 5px;">*Hover to reveal this sensitive token</div>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 30px;">📡 Server-Side Metadata</h2>
+        <div class="grid">
+            <div class="result-box">
+                <div class="label">Player URL <span class="badge badge-broker">BROKER</span></div>
+                <div class="value" id="playerUrl" style="font-size: 12px;">-</div>
+            </div>
+            <div class="result-box">
+                <div class="label">Signature Timestamp <span class="badge badge-broker">BROKER</span></div>
+                <div class="value" id="sts">-</div>
+            </div>
+            <div class="result-box" style="grid-column: span 2;">
+                <div class="label">Streaming Data Availability</div>
+                <div class="value" id="streamingStatus">-</div>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 30px;">📝 Full JSON Response</h2>
+        <pre id="jsonOutput">Waiting for request...</pre>
+    </div>
+
+    <script>
+        async function fetchMetadata() {
+            const videoId = document.getElementById('videoId').value;
+            const status = document.getElementById('status');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            
+            // Reset UI
+            status.style.display = 'none';
+            results.style.display = 'none';
+            loading.style.display = 'block';
+
+            try {
+                // Call the local API
+                const startTime = performance.now();
+                const res = await fetch(`http://localhost:3000/youtube/player/${videoId}`);
+                const data = await res.json();
+                const endTime = performance.now();
+
+                loading.style.display = 'none';
+                results.style.display = 'block';
+
+                if (data.error) {
+                    status.textContent = `❌ API Error: ${data.message}`;
+                    status.className = 'status error';
+                    return;
+                }
+
+                // Populate Fields
+                document.getElementById('clientName').textContent = data.handshake?.clientName || 'N/A';
+                document.getElementById('clientVersion').textContent = data.handshake?.clientVersion || 'N/A';
+                document.getElementById('visitorData').textContent = data.handshake?.visitorData || 'MISSING';
+                
+                document.getElementById('playerUrl').textContent = data.playerUrl || 'MISSING';
+                document.getElementById('sts').textContent = data.signatureTimestamp || 'MISSING';
+
+                // Streaming Data Logic
+                const sd = data.streamingData;
+                const statusEl = document.getElementById('streamingStatus');
+                if (sd && (sd.formats?.length > 0 || sd.adaptiveFormats?.length > 0)) {
+                    statusEl.innerHTML = `<span style="color: green">✅ AVAILABLE (Combined WEB+ANDROID)</span>`;
+                } else {
+                    statusEl.innerHTML = `<span style="color: orange">⚠️ RESTRICTED (Use Handshake keys to extract locally)</span>`;
+                }
+
+                // formatted JSON
+                document.getElementById('jsonOutput').textContent = JSON.stringify(data, null, 2);
+
+                status.textContent = `✅ Success! Data fetched in ${Math.round(endTime - startTime)}ms`;
+                status.className = 'status success';
+                
+            } catch (err) {
+                loading.style.display = 'none';
+                status.textContent = `❌ Network Error: Failed to connect to localhost:3000. Is the server running?`;
+                status.className = 'status error';
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>

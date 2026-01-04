@@ -273,11 +273,14 @@
 
                 try {
                     // Initialize Client with Server Handshake
+                    // FIX: "Illegal invocation" happens when fetch is detached from window. 
+                    // We bind it explicitly here.
                     const yt = await Innertube.create({
                         cache: new UniversalCache(false),
                         visitor_data: data.handshake?.visitorData,
                         client_type: data.handshake?.clientName || 'WEB',
-                        retrieve_player: false
+                        retrieve_player: false,
+                        fetch: (input, init) => window.fetch(input, init)
                     });
 
                     // If server gave us Android data, use it directly (it's often clean)
@@ -330,7 +333,7 @@
 
                 } catch (clientErr) {
                     console.error(clientErr);
-                    extStatus.textContent = `❌ Extraction Failed: ${clientErr.message}`;
+                    extStatus.innerHTML = `❌ Extraction Failed: ${clientErr.message}<br><small style="color: #ccc">Make sure you are opening this via http://, not file://</small>`;
                     extStatus.style.color = "#ef5350";
                 }
 

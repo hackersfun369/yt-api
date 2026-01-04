@@ -16,12 +16,15 @@ async function getYT() {
     if (yt) return yt;
     try {
         const { Innertube, UniversalCache } = await import('youtubei.js');
+        const cookie = process.env.YT_COOKIES || '';
+
         yt = await Innertube.create({
             cache: new UniversalCache(false),
-            client_type: 'ANDROID', // Most stable for metadata
+            client_type: 'ANDROID',
+            cookie: cookie, // Injecting user cookies to bypass bot detection
             generate_session_locally: true
         });
-        console.log('✅ YouTube InnerTube Client Initialized');
+        console.log(`✅ YouTube InnerTube Client Initialized ${cookie ? '(Authenticated)' : '(Guest Mode)'}`);
         lastInitError = null;
         return yt;
     } catch (e) {

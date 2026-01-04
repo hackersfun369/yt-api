@@ -14,6 +14,19 @@ A high-performance, serverless-ready REST API for YouTube Music data. This API p
 
 ---
 
+## 🛡️ Bypassing "Sign in to confirm you're not a bot"
+
+If your API returns a `LOGIN_REQUIRED` error (YouTube Bot detection), follow these steps to authenticate your server:
+
+1.  **Get Cookies**: Install the [EditThisCookie](https://chrome.google.com/webstore/detail/editthiscookie/fngmhnnpilhplaeedifhccceomclgfbg) extension in your browser.
+2.  **Export**: Go to [YouTube Music](https://music.youtube.com), click the extension, and click the **Export** button (it will copy a JSON string to your clipboard).
+3.  **Set Environment Variable**:
+    - **Local**: Create a `.env` file and set `YT_COOKIES="your_copied_json_string"`.
+    - **Netlify**: Go to **Site Settings > Environment Variables** and add a new variable called `YT_COOKIES`.
+4.  **Restart**: Redeploy your site. The API will now act as a "logged-in human," bypassing all bot detection.
+
+---
+
 ## 🌍 Device Compatibility
 
 This API is a **Universal REST API**. Because it uses standard HTTP and JSON, it works on any device with an internet connection:

@@ -354,6 +354,15 @@
                         urlDisplay.textContent = streamUrl;
                         urlDisplay.style.display = 'block';
                         extStatus.style.color = "#66bb6a";
+
+                        // Auto-play the audio
+                        try {
+                            await player.play();
+                            extStatus.textContent += " (Playing)";
+                        } catch (e) {
+                            console.warn("Autoplay blocked:", e);
+                            extStatus.textContent += " (Click Play)";
+                        }
                     }
 
                 } catch (clientErr) {

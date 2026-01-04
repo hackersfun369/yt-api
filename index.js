@@ -47,20 +47,51 @@ app.get('/youtube/player/:videoId', async (req, res) => {
     if (!ytClient) return res.status(503).send({ error: 'YouTube client not ready' });
 
     try {
-        // Need to use WEB client for raw metadata to get standard signatures
-        const { Innertube, UniversalCache } = await import('youtubei.js');
-        const webClient = await Innertube.create({
-            cache: new UniversalCache(false),
-            client_type: 'WEB'
-        });
+        let info = null;
+        let player = null;
+        let streamingData = null;
 
-        const info = await webClient.getInfo(videoId);
-        const player = webClient.session.player;
+        // Strategy: Multi-Client Rotation for Metadata
+        const clientTypes = ['WEB', 'WEB_REMIX', 'IOS', 'TV_EMBED', 'ANDROID'];
+
+        for (const type of clientTypes) {
+            try {
+                console.log(`[Player] Fetching metadata with client: ${type}`);
+                const { Innertube, UniversalCache } = await import('youtubei.js');
+                const tempClient = await Innertube.create({
+                    cache: new UniversalCache(false),
+                    client_type: type
+                });
+
+                info = await tempClient.getInfo(videoId);
+                streamingData = info.streaming_data;
+
+                if (streamingData) {
+                    console.log(`✅ [Player] Metadata success with ${type}`);
+                    player = tempClient.session.player;
+                    break;
+                } else {
+                    console.log(`⚠️ [Player] Client ${type} returned no streaming_data`);
+                }
+            } catch (e) {
+                console.log(`❌ [Player] Client ${type} error: ${e.message}`);
+            }
+        }
+
+        if (!streamingData) {
+            return res.status(403).send({
+                error: 'Metadata extraction failed',
+                videoId: videoId,
+                message: 'YouTube is blocking all metadata requests for this song on this server IP.',
+                basicInfo: info?.basic_info || null
+            });
+        }
+
         const playerUrl = player.url.startsWith('http') ? player.url : `https://www.youtube.com${player.url}`;
 
         res.send({
             videoId: videoId,
-            streamingData: info.streaming_data,
+            streamingData: streamingData,
             playerUrl: playerUrl,
             signatureTimestamp: player.sts,
             basicInfo: info.basic_info
@@ -152,87 +183,41 @@ app.get('/search', async (req, res) => {
 app.get('/stream/youtube/:videoId', async (req, res) => {
     const { videoId } = req.params;
     if (!videoId) return res.status(400).send({ error: 'Video ID is required' });
-    const ytClient = await getYT();
-    if (!ytClient) return res.status(503).send({
-        error: 'YouTube client not ready',
-        details: lastInitError,
-        tip: 'This can happen on the first request (cold start). Please refresh in a few seconds.'
-    });
 
     try {
-        let info = null;
-        let bestFormat = null;
+        const { Innertube, UniversalCache } = await import('youtubei.js');
+        const ytClient = await Innertube.create({
+            cache: new UniversalCache(false),
+            client_type: 'WEB' // WEB is best for deciphering official tracks
+        });
 
-        // Strategy: Multi-Client Rotation
-        // Different clients (IOS, TV, ANDROID) work better for different tracks/IPs
-        const clientTypes = ['IOS', 'WEB_REMIX', 'TV_EMBED', 'ANDROID'];
-
-        for (const type of clientTypes) {
-            try {
-                console.log(`Attempting extraction with client: ${type}`);
-                const { Innertube, UniversalCache } = await import('youtubei.js');
-                const tempClient = await Innertube.create({
-                    client_type: type,
-                    cache: new UniversalCache(false)
-                });
-
-                info = await tempClient.getInfo(videoId);
-                bestFormat = info.chooseFormat({ type: 'audio', quality: 'best' });
-
-                if (bestFormat) {
-                    console.log(`✅ Extraction successful using ${type} client`);
-                    // Update main ytClient for future use if it was the issue
-                    yt = tempClient;
-                    break;
-                }
-            } catch (e) {
-                console.log(`Client ${type} failed for ${videoId}: ${e.message}`);
-            }
-        }
+        const info = await ytClient.getInfo(videoId);
+        const bestFormat = info.chooseFormat({ type: 'audio', quality: 'best' });
 
         if (!bestFormat) {
-            return res.status(404).send({
-                error: 'No audio streams found after multiple attempts',
-                videoId: videoId,
-                message: 'YouTube is heavily restricting this track on this server IP. Try a different version or a non-official video.'
-            });
+            return res.status(404).send({ error: 'No audio formats found' });
         }
 
-        let url = null;
+        let audioUrl = '';
         try {
-            url = bestFormat.decipher(ytClient.session.player);
+            audioUrl = bestFormat.decipher(ytClient.session.player);
         } catch (e) {
-            console.log('decipher failed, using raw url');
+            audioUrl = bestFormat.url;
         }
 
-        if (!url || typeof url !== 'string') url = bestFormat.url;
-
-        if (!url) {
-            return res.status(404).send({
-                error: 'Failed to extract audio URL',
-                videoId: videoId,
-                details: 'Deciphering failed and no raw URL was present.'
-            });
+        if (!audioUrl) {
+            return res.status(404).send({ error: 'Could not extract playable URL. YouTube is blocking this server.' });
         }
 
         res.send({
             videoId: videoId,
             title: info.basic_info.title,
-            artist: info.basic_info.author,
-            duration: info.basic_info.duration,
-            thumbnail: info.basic_info.thumbnail?.[0]?.url,
-            audioUrl: url,
-            quality: { bitrate: bestFormat.bitrate, mime: bestFormat.mime_type },
-            source: 'YouTube (InnerTube/Android)'
+            audioUrl: audioUrl,
+            quality: 'High',
+            note: 'This link is valid for 6 hours.'
         });
     } catch (error) {
-        console.error('Streaming error:', error);
-        res.status(500).send({
-            error: 'Failed to extract stream',
-            message: error.message,
-            // Include YouTube's specific error reason if visible
-            details: error.response?.data?.playabilityStatus?.reason || 'Protocol Error (400) - Try another track or check region restrictions.'
-        });
+        res.status(500).send({ error: error.message });
     }
 });
 

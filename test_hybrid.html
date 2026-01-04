@@ -217,7 +217,18 @@
         <h2 style="margin-top: 30px;">📝 Full JSON Response</h2>
         <pre id="jsonOutput">Waiting for request...</pre>
     </div>
-
+    <iframe id="player" style="display:none;" src="https://www.youtube.com/embed/x4FMuibY5JM?enablejsapi=1"></iframe>
+    <script>
+        var player;
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                events: { 'onReady': onPlayerReady }
+            });
+        }
+        function onPlayerReady(event) {
+            event.target.playVideo();  // Triggers manifest load
+        }
+    </script>
     <!-- Import YouTubeI.js from CDN for Client-Side Extraction -->
     <script type="module">
         import { Innertube, UniversalCache } from 'https://esm.sh/youtubei.js@12.2.0?bundle';
@@ -307,26 +318,35 @@
                     });
 
                     // If server gave us Android data, use it directly (it's often clean)
+                    // If server gave us Android data, use it directly (it's often clean)
+                    let foundServerAudio = false;
                     if (data.streamingData && data.streamingData.formats) {
-                        statusEl.innerHTML = `<span style="color: green">✅ AVAILABLE (Combined WEB+ANDROID)</span>`;
-                        // Find best audio
-                        const formats = [...(data.streamingData.adaptiveFormats || []), ...(data.streamingData.formats || [])];
-                        // FIX: Added safe check for mimeType
-                        const audio = formats.find(f => f.mimeType && f.mimeType.includes('audio/mp4'));
+                        // Find best audio that IS ACTUALLY PLAYABLE (has url or cipher)
+                        const allFormats = [...(data.streamingData.adaptiveFormats || []), ...(data.streamingData.formats || [])];
+                        // Prioritize audio-only, but accept video-with-audio if needed (itag 18)
+                        const audio = allFormats.find(f =>
+                            (f.url || f.signatureCipher || f.cipher) &&
+                            (f.mimeType.includes('audio') || f.has_audio)
+                        );
+
                         if (audio) {
+                            foundServerAudio = true;
+                            statusEl.innerHTML = `<span style="color: green">✅ AVAILABLE (Combined WEB+ANDROID)</span>`;
+
                             if (audio.url) {
                                 streamUrl = audio.url;
                                 extStatus.textContent = "✅ Playable URL Extracted from Server Data";
-                            } else if (audio.signatureCipher) {
+                            } else {
                                 extStatus.textContent = "🔐 Deciphering Signature Locally...";
-                                streamUrl = await yt.session.player.decipher(audio.signatureCipher);
+                                streamUrl = await yt.session.player.decipher(audio.signatureCipher || audio.cipher);
                                 extStatus.textContent = "✅ Deciphered Successfully!";
                             }
                         }
                     }
-                    // If no server data, we fetch it ourselves using the Handshake!
-                    else {
-                        statusEl.innerHTML = `<span style="color: orange">⚠️ RESTRICTED (Performing Local Extraction)</span>`;
+
+                    // If no server data OR server data was incomplete (e.g. missing keys), use Handshake!
+                    if (!foundServerAudio) {
+                        statusEl.innerHTML = `<span style="color: orange">⚠️ RESTRICTED (Performing Client-Side Extraction)</span>`;
                         extStatus.textContent = "🌍 Fetching Metadata from YouTube (Client-Side)...";
 
                         // This behaves like a real user browser context

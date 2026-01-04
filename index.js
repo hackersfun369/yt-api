@@ -72,7 +72,14 @@ app.get('/youtube/player/:videoId', async (req, res) => {
 
         const androidInfoPromise = androidClient.getInfo(videoId);
 
-        const [webInfo, androidInfo] = await Promise.allSettled([webInfoPromise, androidInfoPromise]);
+        // OPTIMIZATION: Race Android fetch against a 2s timeout. 
+        // If Android is slow, we return Web result immediately so client can start extraction.
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('TIMEOUT'), 2000));
+
+        const [webInfo, androidInfo] = await Promise.allSettled([
+            webInfoPromise,
+            Promise.race([androidInfoPromise, timeoutPromise])
+        ]);
 
         // Process Web Result (for Player URL & Handshake)
         const info = webInfo.status === 'fulfilled' ? webInfo.value : null;

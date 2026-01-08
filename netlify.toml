@@ -5,7 +5,136 @@
 [functions]
   node_bundler = "esbuild"
 
+# Root endpoint
 [[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/:splat"
+  from = "/"
+  to = "/.netlify/functions/index"
+  status = 200
+
+# Unified search
+[[redirects]]
+  from = "/search"
+  to = "/.netlify/functions/search"
+  status = 200
+
+# YouTube endpoints
+[[redirects]]
+  from = "/youtube/home"
+  to = "/.netlify/functions/youtube-home"
+  status = 200
+
+[[redirects]]
+  from = "/youtube/explore"
+  to = "/.netlify/functions/youtube-explore"
+  status = 200
+
+[[redirects]]
+  from = "/youtube/moods"
+  to = "/.netlify/functions/youtube-moods"
+  status = 200
+
+[[redirects]]
+  from = "/youtube/search"
+  to = "/.netlify/functions/youtube-search"
+  status = 200
+
+[[redirects]]
+  from = "/youtube/suggestions"
+  to = "/.netlify/functions/youtube-suggestions"
+  status = 200
+
+[[redirects]]
+  from = "/youtube/trending"
+  to = "/.netlify/functions/youtube-trending"
+  status = 200
+
+[[redirects]]
+  from = "/youtube/metadata/:id"
+  to = "/.netlify/functions/youtube-metadata?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/youtube/audio/:id"
+  to = "/.netlify/functions/youtube-audio?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/youtube/album/:id"
+  to = "/.netlify/functions/youtube-album?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/youtube/playlist/:id"
+  to = "/.netlify/functions/youtube-playlist?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/youtube/artist/:id"
+  to = "/.netlify/functions/youtube-artist?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/youtube/lyrics/:id"
+  to = "/.netlify/functions/youtube-lyrics?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/youtube/next/:id"
+  to = "/.netlify/functions/youtube-next?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/youtube/related/:id"
+  to = "/.netlify/functions/youtube-related?id=:id"
+  status = 200
+
+# JioSaavn endpoints
+[[redirects]]
+  from = "/saavn/home"
+  to = "/.netlify/functions/saavn-home"
+  status = 200
+
+[[redirects]]
+  from = "/saavn/search"
+  to = "/.netlify/functions/saavn-search"
+  status = 200
+
+[[redirects]]
+  from = "/saavn/trending"
+  to = "/.netlify/functions/saavn-trending"
+  status = 200
+
+[[redirects]]
+  from = "/saavn/metadata/:id"
+  to = "/.netlify/functions/saavn-metadata?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/saavn/audio/:id"
+  to = "/.netlify/functions/saavn-audio?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/saavn/album/:id"
+  to = "/.netlify/functions/saavn-album?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/saavn/playlist/:id"
+  to = "/.netlify/functions/saavn-playlist?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/saavn/artist/:id"
+  to = "/.netlify/functions/saavn-artist?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/saavn/lyrics/:id"
+  to = "/.netlify/functions/saavn-lyrics?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/saavn/next/:id"
+  to = "/.netlify/functions/saavn-next?id=:id"
   status = 200

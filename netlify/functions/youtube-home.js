@@ -22,8 +22,11 @@ export async function handler(event) {
             const items = [];
             const shelfItems = shelf.contents || [];
             for (const item of shelfItems) {
-                const renderer = item.musicResponsiveListItemRenderer || item.musicTwoRowItemRenderer;
+                const renderer = item.musicResponsiveListItemRenderer ||
+                    item.musicTwoRowItemRenderer ||
+                    item.musicTwoColumnItemRenderer;
                 if (!renderer) continue;
+
                 const parsed = parseYtmItem(renderer);
                 if (parsed) items.push(parsed);
             }
@@ -46,3 +49,4 @@ export async function handler(event) {
         };
     }
 }
+

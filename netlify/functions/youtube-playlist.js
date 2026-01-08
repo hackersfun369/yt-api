@@ -17,7 +17,12 @@ export async function handler(event) {
     }
 
     try {
-        const browseId = id.startsWith('PL') || id.startsWith('VL') ? id : `VL${id}`;
+        // Handle different playlist ID formats
+        let browseId = id;
+        if (!id.startsWith('VL') && !id.startsWith('RDAMPL') && !id.startsWith('OLAK')) {
+            browseId = id.startsWith('PL') ? `VL${id}` : id;
+        }
+
         const data = await sendYtmRequest('browse', { browseId });
 
         const items = [];
@@ -43,3 +48,4 @@ export async function handler(event) {
         };
     }
 }
+

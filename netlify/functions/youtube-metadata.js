@@ -2,6 +2,13 @@
 import { corsHeaders } from './utils.js';
 import ytdl from '@distube/ytdl-core';
 
+// Create agent with cookie support
+const createYtdlAgent = () => {
+    return ytdl.createAgent(undefined, {
+        localAddress: undefined
+    });
+};
+
 export async function handler(event) {
     if (event.httpMethod === 'OPTIONS') {
         return { statusCode: 200, headers: corsHeaders, body: '' };
@@ -18,7 +25,20 @@ export async function handler(event) {
     }
 
     try {
-        const info = await ytdl.getBasicInfo(id);
+        const agent = createYtdlAgent();
+        const cookies = process.env.YT_COOKIES || '';
+
+        const info = await ytdl.getBasicInfo(id, {
+            agent,
+            requestOptions: {
+                headers: {
+                    cookie: cookies,
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept-Language': 'en-US,en;q=0.9'
+                }
+            }
+        });
+
         const video = info.videoDetails;
 
         return {
@@ -41,3 +61,4 @@ export async function handler(event) {
         };
     }
 }
+

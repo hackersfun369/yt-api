@@ -1,14 +1,5 @@
-// YouTube audio stream extraction
-import { corsHeaders } from './utils.js';
-import ytdl from '@distube/ytdl-core';
-
-// Create agent with cookie support
-const createYtdlAgent = () => {
-    const cookies = process.env.YT_COOKIES || '';
-    return ytdl.createAgent(undefined, {
-        localAddress: undefined
-    });
-};
+// YouTube audio stream extraction using InnerTube API
+import { corsHeaders, sendYtmRequest } from './utils.js';
 
 export async function handler(event) {
     if (event.httpMethod === 'OPTIONS') {
@@ -25,59 +16,67 @@ export async function handler(event) {
         };
     }
 
-    // Try multiple clients for better reliability
-    const clients = ['ANDROID', 'IOS', 'WEB'];
-
-    for (const client of clients) {
-        try {
-            const agent = createYtdlAgent();
-            const cookies = process.env.YT_COOKIES || '';
-
-            const info = await ytdl.getInfo(id, {
-                agent,
-                requestOptions: {
-                    headers: {
-                        cookie: cookies,
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                        'Accept-Language': 'en-US,en;q=0.9'
-                    }
+    try {
+        // Use InnerTube player endpoint to get streaming data
+        const data = await sendYtmRequest('player', {
+            videoId: id,
+            params: 'CgIQBg==', // Audio only
+            playbackContext: {
+                contentPlaybackContext: {
+                    signatureTimestamp: Math.floor(Date.now() / 1000)
                 }
-            });
-
-            const audioFormats = ytdl.filterFormats(info.formats, 'audioonly');
-            if (audioFormats.length === 0) {
-                continue; // Try next client
             }
+        });
 
-            // Get highest quality audio
-            const bestAudio = audioFormats.reduce((best, format) => {
-                return (format.audioBitrate || 0) > (best.audioBitrate || 0) ? format : best;
-            });
-
+        const streamingData = data.streamingData;
+        if (!streamingData) {
             return {
-                statusCode: 302,
-                headers: {
-                    ...corsHeaders,
-                    'Location': bestAudio.url
-                },
-                body: ''
+                statusCode: 404,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ error: 'No streaming data available' })
             };
-        } catch (error) {
-            // Try next client
-            if (client === clients[clients.length - 1]) {
-                // Last client failed, return error
-                return {
-                    statusCode: 500,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ error: error.message })
-                };
-            }
         }
-    }
 
-    return {
-        statusCode: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Failed to extract audio from all clients' })
-    };
+        // Get audio formats
+        const audioFormats = streamingData.adaptiveFormats?.filter(f =>
+            f.mimeType?.includes('audio')
+        ) || [];
+
+        if (audioFormats.length === 0) {
+            return {
+                statusCode: 404,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ error: 'No audio stream found' })
+            };
+        }
+
+        // Get highest bitrate audio
+        const bestAudio = audioFormats.reduce((best, format) => {
+            return (format.bitrate || 0) > (best.bitrate || 0) ? format : best;
+        });
+
+        const audioUrl = bestAudio.url;
+        if (!audioUrl) {
+            return {
+                statusCode: 404,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ error: 'Audio URL not available' })
+            };
+        }
+
+        return {
+            statusCode: 302,
+            headers: {
+                ...corsHeaders,
+                'Location': audioUrl
+            },
+            body: ''
+        };
+    } catch (error) {
+        return {
+            statusCode: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: error.message })
+        };
+    }
 }

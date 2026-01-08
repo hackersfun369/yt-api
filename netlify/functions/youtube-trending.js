@@ -7,7 +7,10 @@ export async function handler(event) {
     }
 
     try {
-        const data = await sendYtmRequest('browse', { browseId: 'FEmusic_trending' });
+        // Use the correct browse ID for charts
+        const data = await sendYtmRequest('browse', {
+            browseId: 'FEmusic_charts'
+        });
 
         const items = [];
         const sections = data.contents?.singleColumnBrowseResultsRenderer?.tabs?.[0]?.tabRenderer?.content?.sectionListRenderer?.contents || [];
@@ -41,4 +44,3 @@ export async function handler(event) {
         };
     }
 }
-

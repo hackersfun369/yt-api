@@ -1,0 +1,12 @@
+node_modules/
+.netlify/
+.env
+*.log
+.DS_Store
+dist/
+build/
+.dart_tool/
+pubspec.lock
+*.exe
+*.dll
+data/

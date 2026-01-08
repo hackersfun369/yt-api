@@ -1,11 +1,19 @@
 [build]
+<<<<<<< HEAD
   functions = "netlify/functions"
   publish = "."
+=======
+  functions = "functions"
+>>>>>>> db1afd581ed094fb7fa0a452610db7593489790e
 
 [functions]
   node_bundler = "esbuild"
 
 [[redirects]]
   from = "/*"
+<<<<<<< HEAD
   to = "/.netlify/functions/:splat"
+=======
+  to = "/.netlify/functions/api"
+>>>>>>> db1afd581ed094fb7fa0a452610db7593489790e
   status = 200

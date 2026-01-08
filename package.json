@@ -1,0 +1,21 @@
+{
+    "name": "bloomee-api",
+    "version": "1.0.0",
+    "description": "Bloomee Unified Music API - Netlify Serverless Functions",
+    "type": "module",
+    "scripts": {
+        "dev": "netlify dev",
+        "build": "echo 'No build step required'",
+        "deploy": "netlify deploy --prod"
+    },
+    "dependencies": {
+        "@distube/ytdl-core": "^4.14.4",
+        "axios": "^1.6.5"
+    },
+    "devDependencies": {
+        "netlify-cli": "^17.0.0"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}

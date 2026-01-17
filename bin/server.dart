@@ -482,7 +482,7 @@ Future<Response> _youtubeAudioHandler(Request req, String id) async {
     print('DEBUG: Error extracting stream: $e');
     // Fallback to InnerTube API
     try {
-      final fallbackUrl = 'https://your-netlify-site.netlify.app/youtube/audio/$id';
+      final fallbackUrl = 'https://nirvay-api.netlify.app/youtube/audio/$id';
       final response = await http.get(Uri.parse(fallbackUrl));
       if (response.statusCode == 302) {
         return Response.found(response.headers['location']!);

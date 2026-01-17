@@ -1,4 +1,3 @@
-// YouTube audio stream extraction using InnerTube API
 import { corsHeaders, sendYtmRequest } from './utils.js';
 
 export async function handler(event) {
@@ -17,14 +16,20 @@ export async function handler(event) {
     }
 
     try {
-        // Use InnerTube player endpoint to get streaming data
         const data = await sendYtmRequest('player', {
             videoId: id,
-            params: 'CgIQBg==', // Audio only
+            params: 'CgIQBg==', // Update this if needed
             playbackContext: {
                 contentPlaybackContext: {
                     signatureTimestamp: Math.floor(Date.now() / 1000)
                 }
+            }
+        }, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Origin': 'https://music.youtube.com',
+                'Referer': 'https://music.youtube.com/',
+                'Content-Type': 'application/json',
             }
         });
 
@@ -37,7 +42,6 @@ export async function handler(event) {
             };
         }
 
-        // Get audio formats
         const audioFormats = streamingData.adaptiveFormats?.filter(f =>
             f.mimeType?.includes('audio')
         ) || [];
@@ -50,7 +54,6 @@ export async function handler(event) {
             };
         }
 
-        // Get highest bitrate audio
         const bestAudio = audioFormats.reduce((best, format) => {
             return (format.bitrate || 0) > (best.bitrate || 0) ? format : best;
         });

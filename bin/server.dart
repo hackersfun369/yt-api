@@ -461,12 +461,42 @@ Future<Response> _youtubePlaylistHandler(Request req, String id) async {
 Future<Response> _youtubeAudioHandler(Request req, String id) async {
   final yt = YoutubeExplode();
   try {
-    final manifest = await yt.videos.streamsClient.getManifest(id, ytClients: [YoutubeApiClient.androidVr]);
+    // Check if video is age-restricted
+    final video = await yt.videos.get(id);
+    if (video.ageRestricted) {
+      return Response.forbidden('Video is age-restricted');
+    }
+
+    // Try to get the manifest with different clients
+    final manifest = await yt.videos.streamsClient.getManifest(id, ytClients: [YoutubeApiClient.web]);
     final stream = manifest.audioOnly.withHighestBitrate();
-    if (stream == null) return Response.notFound('No stream');
+
+    if (stream == null) {
+      print('DEBUG: No audio stream found for video ID: $id');
+      return Response.notFound('No stream');
+    }
+
+    print('DEBUG: Found audio stream: ${stream.url}');
     return Response.found(stream.url.toString());
-  } catch (e) { return Response.internalServerError(body: e.toString()); } finally { yt.close(); }
+  } catch (e) {
+    print('DEBUG: Error extracting stream: $e');
+    // Fallback to InnerTube API
+    try {
+      final fallbackUrl = 'https://your-netlify-site.netlify.app/youtube/audio/$id';
+      final response = await http.get(Uri.parse(fallbackUrl));
+      if (response.statusCode == 302) {
+        return Response.found(response.headers['location']!);
+      } else {
+        return Response(response.statusCode, body: response.body);
+      }
+    } catch (e) {
+      return Response.internalServerError(body: 'Fallback failed: $e');
+    }
+  } finally {
+    yt.close();
+  }
 }
+
 
 Future<Response> _saavnNextHandler(Request req, String id) async {
   try {
